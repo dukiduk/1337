@@ -1,0 +1,14 @@
+imu_filter_madgwick_node:
+  ros__parameters:
+
+    use_mag: true
+
+    mag_bias_x: 0.0
+    mag_bias_y: 0.0
+    mag_bias_z: 0.0
+    
+    subscription_queue_size: 10
+    
+    fixed_frame: "odom"
+
+    publish_tf: false
