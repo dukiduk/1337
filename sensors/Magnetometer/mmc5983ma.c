@@ -139,43 +139,13 @@ HAL_StatusTypeDef MMC5983MA_ReadMagneticField(
     MMC5983MA_RawData *data
 )
 {
-    /*
-     * We need to read:
-     *
-     * 0x00 XOUT_0
-     * 0x01 XOUT_1
-     * 0x02 YOUT_0
-     * 0x03 YOUT_1
-     * 0x04 ZOUT_0
-     * 0x05 ZOUT_1
-     * 0x06 XYZOUT_2
-     *
-     * 7 data bytes + 1 command byte = 8 bytes.
-     */
 
     uint8_t tx[8];
     uint8_t rx[8];
 
-    /*
-     * MMC5983MA SPI read command:
-     *
-     * bit 0     = 1 (READ)
-     * bit 1     = don't care
-     * bits 2-7  = register address
-     */
+    tx[0] = (MMC5983MA_REG_XOUT_0 << 2) | MMC5983MA_SPI_READ;
 
-    tx[0] =
-        (MMC5983MA_REG_XOUT_0 << 2) |
-        MMC5983MA_SPI_READ;
-
-    /*
-     * Remaining bytes are dummy bytes.
-     * They generate the clock pulses needed
-     * for the MMC5983MA to send its data.
-     */
-
-    for (int i = 1; i < 8; i++)
-    {
+    for (int i = 1; i < 8; i++) {
         tx[i] = 0x00;
     }
 
@@ -210,64 +180,13 @@ HAL_StatusTypeDef MMC5983MA_ReadMagneticField(
     }
 
 
-    /*
-     * rx[0] corresponds to the command byte.
-     *
-     * Actual register data:
-     *
-     * rx[1] = XOUT_0
-     * rx[2] = XOUT_1
-     * rx[3] = YOUT_0
-     * rx[4] = YOUT_1
-     * rx[5] = ZOUT_0
-     * rx[6] = ZOUT_1
-     * rx[7] = XYZOUT_2
-     */
+    data->mag_x = ((uint32_t)rx[1] << 10) | ((uint32_t)rx[2] << 2) | ((rx[7] >> 6) & 0x03);
 
+    data->mag_y = ((uint32_t)rx[3] << 10) | ((uint32_t)rx[4] << 2) | ((rx[7] >> 4) & 0x03);
 
-    /*
-     * X:
-     *
-     * XOUT_0 = X[17:10]
-     * XOUT_1 = X[9:2]
-     * XYZOUT_2[7:6] = X[1:0]
-     */
+    data->mag_z = ((uint32_t)rx[5] << 10) | ((uint32_t)rx[6] << 2) | ((rx[7] >> 2) & 0x03);
 
-    data->mag_x =
-        ((uint32_t)rx[1] << 10) |
-        ((uint32_t)rx[2] << 2) |
-        ((rx[7] >> 6) & 0x03);
-
-
-    /*
-     * Y:
-     *
-     * YOUT_0 = Y[17:10]
-     * YOUT_1 = Y[9:2]
-     * XYZOUT_2[5:4] = Y[1:0]
-     */
-
-    data->mag_y =
-        ((uint32_t)rx[3] << 10) |
-        ((uint32_t)rx[4] << 2) |
-        ((rx[7] >> 4) & 0x03);
-
-
-    /*
-     * Z:
-     *
-     * ZOUT_0 = Z[17:10]
-     * ZOUT_1 = Z[9:2]
-     * XYZOUT_2[3:2] = Z[1:0]
-     */
-
-    data->mag_z =
-        ((uint32_t)rx[5] << 10) |
-        ((uint32_t)rx[6] << 2) |
-        ((rx[7] >> 2) & 0x03);
-
-
-    data->timestamp_milliseconds = HAL.GetTick();
+    data->timestamp_milliseconds = HAL_GetTick();
     
     return HAL_OK;
 }
