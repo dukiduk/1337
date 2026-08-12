@@ -1,4 +1,6 @@
-#include "neo_m9n.h"
+/* Fix #1: was #include "neo_m9n.h" -- doesn't match the actual filename
+   neom9n.h (no underscore). This alone made the file fail to compile. */
+#include "neom9n.h"
 #include <string.h>
 #include <stdlib.h>
 
@@ -45,6 +47,19 @@ bool NEOM9N_ParseNMEA(NEOM9N_HandleTypeDef *dev, char *line) {
     char *token;
     int field = 0;
     char *rest = line;
+
+    /* Fix #2: the original loop counted the sentence tag itself
+       ("$GNGGA") as field 1, shifting every subsequent field's case
+       label by one -- fix_valid ended up reading the E/W character
+       (always parses to 0 via atoi, so fix_valid was ALWAYS false),
+       latitude/longitude were parsed from the wrong tokens, altitude
+       read HDOP instead. Consuming and discarding the tag token here,
+       before the counted loop starts, realigns every case label with
+       its actual GGA field. */
+    token = strtok_r(rest, ",", &rest); // consume "$GNGGA"/"$GPGGA", discard it
+    if (token == NULL) {
+        return false;
+    }
 
     while ((token = strtok_r(rest, ",", &rest)) != NULL) {
         field++;

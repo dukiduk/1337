@@ -1,3 +1,5 @@
+/* No compile/link errors were found in this file -- the one fix here is
+   the missing sensor-enable init routine, added at the bottom. */
 #include "icm42688.h"
 
 HAL_StatusTypeDef ICM42688_ReadRegister(
@@ -82,6 +84,31 @@ HAL_StatusTypeDef ICM42688_ReadIMUData(
     data->gyro_pitch             = raw_data[5];
     data->gyro_yaw               = raw_data[6];
     data->timestamp_milliseconds = HAL_GetTick();
+
+    return HAL_OK;
+}
+
+
+/* Fix (new function): enables accel + gyro in low-noise mode. Without
+   this, PWR_MGMT0 stays at its post-reset default (both sensors off),
+   and every call to ICM42688_ReadIMUData() above returns stale/zero
+   data rather than a genuine error -- it will look like it's "working"
+   since HAL_OK comes back, just with meaningless numbers. */
+HAL_StatusTypeDef ICM42688_Init(
+    SPI_HandleTypeDef *hspi,
+    GPIO_TypeDef *CS_Port,
+    uint16_t CS_Pin
+) {
+    uint8_t pwr_mgmt0_value = ICM42688_PWR_MGMT0_GYRO_LN | ICM42688_PWR_MGMT0_ACCEL_LN;
+
+    HAL_StatusTypeDef status = ICM42688_WriteRegister(
+        hspi, CS_Port, CS_Pin, ICM42688_REG_PWR_MGMT0, pwr_mgmt0_value
+    );
+    if (status != HAL_OK) {
+        return status;
+    }
+
+    HAL_Delay(1); /* datasheet wants ~200us-ish settle time; 1ms is generous margin */
 
     return HAL_OK;
 }

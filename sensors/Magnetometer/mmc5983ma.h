@@ -48,6 +48,20 @@
 
 
 /* =========================
+ * Control Register 0 bits
+ * NOTE: verify against the MMC5983MA datasheet before relying on this --
+ * I have moderate, not high, confidence in these exact bit positions from
+ * memory alone.
+ * ========================= */
+
+#define MMC5983MA_CTRL0_TM_M        (1 << 0)  /* trigger one magnetic measurement */
+#define MMC5983MA_CTRL0_TM_T        (1 << 1)  /* trigger one temperature measurement */
+#define MMC5983MA_CTRL0_SET         (1 << 3)  /* SET pulse -- degausses/aligns sensor */
+#define MMC5983MA_CTRL0_RESET       (1 << 4)  /* RESET pulse -- opposite polarity pulse */
+#define MMC5983MA_CTRL0_AUTO_SR_EN  (1 << 5)  /* automatic SET/RESET */
+
+
+/* =========================
  * Status Bits
  * ========================= */
 
@@ -103,6 +117,16 @@ HAL_StatusTypeDef MMC5983MA_ReadMagneticField(
     GPIO_TypeDef *CS_Port,
     uint16_t CS_Pin,
     MMC5983MA_RawData *data
+);
+
+
+/* Fix #4 (see .c file): SET/RESET sequence, needed to null bridge offset
+   drift. Call this once at startup, and periodically (e.g. every few
+   seconds or every N reads) during operation. */
+HAL_StatusTypeDef MMC5983MA_Init(
+    SPI_HandleTypeDef *hspi,
+    GPIO_TypeDef *CS_Port,
+    uint16_t CS_Pin
 );
 
 
