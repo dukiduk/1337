@@ -3,7 +3,7 @@
 
 int main(void) {
     ADRCLoop loop;
-    double omega_c = 8.0;
+    double omega_c = 4.0;
     double b0_nominal = 2.0;
     double b0_true = 2.4;
 
